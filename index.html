@@ -74,7 +74,8 @@ body:not(.sv) #pgS,body.sv #pgM{visibility:hidden;transition:visibility 0s linea
 .seg button[aria-pressed=true]{background:var(--acc);color:var(--onacc)}
 .nav{display:flex;justify-content:space-between;align-items:center;width:100%;height:44px;border:1px solid var(--line);border-radius:8px;background:none;padding:0 12px;cursor:pointer;font-weight:500}
 .nav:hover{background:var(--hover)}
-.gr{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.gr{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}
+.gc{min-width:0}
 .gc{position:relative;cursor:pointer;display:flex;flex-direction:column;gap:4px}
 .th{position:relative;height:116px;border-radius:8px;border:1px solid #bebebe;box-shadow:0 1px 4px rgba(12,12,13,.05);background:var(--bg2);background-size:100% 100%;overflow:hidden;transition:border-color .15s,box-shadow .15s,transform .15s}
 .th>svg{width:100%;height:100%;display:block}
@@ -180,6 +181,10 @@ body.ne #elev{height:0}
  #scrim{display:block;position:absolute;inset:0;z-index:5;background:rgba(12,12,13,.42);opacity:0;visibility:hidden;transition:opacity .3s ease,visibility 0s linear .3s}
  body.menu #scrim{opacity:1;visibility:visible;transition:opacity .3s ease,visibility 0s}
 
+ /* saved routes: smaller thumbnails, never scroll sideways */
+ .pg{overflow-x:hidden}
+ .gr{gap:12px}
+ .th{height:92px}
  #stats{gap:24px;padding:16px}
  #stats{display:none} /* stats bar hidden on phones: distance is the big readout, pace lives in settings */
  #elev{height:198px}
