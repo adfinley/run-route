@@ -227,6 +227,36 @@ body.ne #elev{height:0}
  /* keep the map attribution clear of the bar */
  .maplibregl-ctrl-bottom-right,.maplibregl-ctrl-bottom-left{bottom:68px}
 }
+
+/* tags, saved-routes view toggle, list view */
+.tgs{display:flex;flex-wrap:wrap;gap:6px}
+.tgs:empty{display:none}
+.chip{display:inline-flex;align-items:center;gap:2px;height:26px;padding:0 4px 0 10px;border-radius:13px;border:1px solid var(--line);background:var(--bg);color:var(--ink);font:400 12px/15px Inter,system-ui,sans-serif;white-space:nowrap}
+.chip button{width:20px;height:20px;border:0;background:none;border-radius:50%;cursor:pointer;color:var(--mute);padding:0;font-size:15px;line-height:1;display:grid;place-items:center}
+.chip button:hover{background:var(--hover);color:var(--ink)}
+button.chip.f{padding:0 10px;cursor:pointer}
+button.chip.f:hover{background:var(--hover)}
+button.chip.f[aria-pressed=true]{background:var(--acc);border-color:var(--acc);color:var(--onacc)}
+#vBar{gap:12px}
+#vSeg{align-self:flex-start}
+body.lv #pgS .gr{display:flex;flex-direction:column;gap:0}
+.lr{display:flex;align-items:center;gap:8px;min-height:40px;padding:4px 8px;margin:0 -8px;border-radius:8px;cursor:pointer}
+.lr:hover{background:var(--hover)}
+.lr:focus-visible{outline:2px solid var(--acc);outline-offset:-2px}
+.lr.cur .rn{color:var(--accT);font-weight:600}
+.rm{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}
+.rn{font-size:14px;line-height:17px;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.rg{font-size:12px;line-height:15px;color:var(--mute);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.rd{flex:none;font:400 12px/15px "DM Mono",monospace;color:var(--mute)}
+.ra{flex:none;display:flex}
+.ra button{width:32px;height:32px;border:0;background:none;border-radius:16px;cursor:pointer;color:var(--ink);display:grid;place-items:center;padding:0;opacity:0;transition:opacity .15s}
+.ra button:hover{background:var(--hover)}
+.lr:hover .ra button,.lr:focus-within .ra button{opacity:1}
+@media(hover:none){.ra button{opacity:1}}
+.ra svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round}
+#tgDlg{position:absolute;inset:0;z-index:30;display:none;align-items:center;justify-content:center;padding:24px;background:rgba(12,12,13,.42)}
+#tgDlg.open{display:flex}
+#tgBox{width:100%;max-width:360px;box-sizing:border-box;background:var(--bg);border:1px solid var(--line);border-radius:12px;padding:20px;display:flex;flex-direction:column;gap:12px;box-shadow:0 6px 24px rgba(0,0,0,.18)}
 </style>
 </head>
 <body class="ne">
@@ -255,8 +285,8 @@ body.ne #elev{height:0}
    <div class="col" style="gap:8px">
     <div class="tg"><span>Dark mode</span><button class="sw" id="tDk" role="switch" aria-checked="false" aria-label="Dark mode"></button></div>
     <div class="tg"><span>Water fountains</span><button class="sw" id="tWt" role="switch" aria-checked="true" aria-label="Water fountains"></button></div>
-    <div class="tg"><span>Washrooms</span><button class="sw" id="tWc" role="switch" aria-checked="true" aria-label="Washrooms"></button></div>
-    <div class="tg"><span>Parking</span><button class="sw" id="tPk" role="switch" aria-checked="true" aria-label="Parking"></button></div>
+    <div class="tg"><span>Washrooms</span><button class="sw" id="tWc" role="switch" aria-checked="false" aria-label="Washrooms"></button></div>
+    <div class="tg"><span>Parking</span><button class="sw" id="tPk" role="switch" aria-checked="false" aria-label="Parking"></button></div>
     <div class="tg"><span>Colour</span><span class="cp"><input type="color" id="cAcc" value="#5b2d98" aria-label="Accent colour"><button class="lnk" id="cReset" type="button">Reset</button></span></div>
    </div>
   </section>
@@ -267,6 +297,7 @@ body.ne #elev{height:0}
     <div class="col" style="gap:16px">
      <div class="col" style="gap:8px"><input class="fld" id="title" value="" aria-label="Route name"><div class="mute sm" id="created"></div></div>
      <div class="tg"><span>Race route</span><button class="sw" id="tRace" role="switch" aria-checked="false" aria-label="Race route"></button></div>
+     <div class="col" style="gap:8px"><div class="tgs" id="tgChips"></div><input class="fld" id="tgIn" list="tgList" placeholder="Add a tag, press Enter" maxlength="40" aria-label="Add a tag" autocomplete="off" enterkeyhint="done"></div><datalist id="tgList"></datalist>
      <button class="btn pri" id="bSave" disabled>Save route</button>
      <div class="cp" style="gap:16px"><button class="lnk" id="lImp" type="button">Import GPX</button><button class="lnk" id="lExp" type="button">Download this GPX</button></div>
     </div>
@@ -281,6 +312,7 @@ body.ne #elev{height:0}
   <div class="pg" id="pgS">
    <div class="hd"><button class="lnk" id="bBack" type="button" style="font-size:14px;padding:0">‹ Back</button><button class="lnk xc" type="button" style="font-size:14px;padding:0">Close</button></div>
    <h1 style="padding:0 24px">Saved Routes</h1>
+   <section class="sec" id="vBar"><div class="seg" id="vSeg" role="group" aria-label="Saved routes view"><button type="button" data-v="grid" aria-pressed="true">Grid</button><button type="button" data-v="list" aria-pressed="false">List</button></div><div class="tgs" id="tgFil" role="group" aria-label="Filter by tag"></div></section>
    <section class="sec"><h2>My Routes</h2><div class="gr" id="gMine"></div><div class="cp" style="gap:16px;margin-top:8px"><button class="lnk" id="bBak" type="button">Back up routes</button><button class="lnk" id="bRst" type="button">Restore from backup</button></div></section>
    <hr class="dash mg">
    <section class="sec"><h2>Race Routes</h2><div class="gr" id="gRace"></div></section>
@@ -288,6 +320,7 @@ body.ne #elev{height:0}
    <section class="sec"><h2>World Majors</h2><div class="gr" id="gMaj"></div></section>
   </div>
   </div>
+  <div id="tgDlg" role="dialog" aria-modal="true" aria-labelledby="tgTitle"><div id="tgBox"><h2 id="tgTitle" style="font-size:16px;line-height:20px"></h2><div class="tgs" id="tgChips2"></div><input class="fld" id="tgIn2" list="tgList" placeholder="Add a tag, press Enter" maxlength="40" aria-label="Add a tag" autocomplete="off" enterkeyhint="done"><div class="cp" style="justify-content:flex-end;gap:16px"><button class="lnk" id="tgCancel" type="button" style="font-size:14px">Cancel</button><button class="btn pri" id="tgDone" type="button" style="width:auto;padding:0 24px;height:36px">Done</button></div></div></div>
  </aside>
  <div id="scrim"></div>
  <div id="mapbox">
@@ -337,7 +370,7 @@ const DARKS=['dark','dark_matter'];
 let ROUTE_COLOR='#9749ff';
 const DEF={route:'#5b2d98',acc:'#5b2d98'};
 let HM=null;try{HM=JSON.parse(LS('home'))}catch(e){}
-const S={accent:null,wps:[],segs:[],snap:true,ob:false,km:true,unit:'km',style:LS('style')||'bright',styles:[],home:Array.isArray(HM)&&HM.length===2?HM:null,sp:LS('sp')==='bike'?'bike':'foot',race:false,poi:(()=>{const d={water:true,wc:true,parking:true};try{return Object.assign(d,JSON.parse(LS('poi')))}catch(e){return d}})(),created:new Date(),id:null,prof:[],pts:[],dist:0,hist:[]};
+const S={accent:null,wps:[],segs:[],snap:true,ob:false,km:true,unit:'km',style:LS('style')||'bright',styles:[],home:Array.isArray(HM)&&HM.length===2?HM:null,sp:LS('sp')==='bike'?'bike':'foot',race:false,poi:(()=>{const d={water:true,wc:false,parking:false};try{const s=JSON.parse(LS('poi'))||{};if(LS('poiv')!=='2'){s.wc=false;s.parking=false;try{localStorage.setItem('poiv','2');localStorage.setItem('poi',JSON.stringify(Object.assign(d,s)))}catch(e){}} /* one-time reset: washrooms and parking now start off */return Object.assign(d,s)}catch(e){return d}})(),created:new Date(),id:null,tags:[],tagF:null,view:LS('sview')==='list'?'list':'grid',prof:[],pts:[],dist:0,hist:[]};
 
 /* ---------- helpers ---------- */
 function toast(t){const m=$('msg');m.textContent=t;m.style.display='block';clearTimeout(toast.t);toast.t=setTimeout(()=>m.style.display='none',3200)}
@@ -719,26 +752,66 @@ function applyAccent(c,persist){
 
 /* ---------- actions ---------- */
 function undo(){if(!S.hist.length)return;const h=JSON.parse(S.hist.pop());S.wps=h.w;S.segs=h.s;refresh()}
-function clearAll(){pushHist();S.wps=[];S.segs=[];S.id=null;S.race=false;setSw('tRace',false);$('title').value='';S.created=new Date();refresh()}
+function clearAll(){pushHist();S.wps=[];S.segs=[];S.id=null;S.race=false;setSw('tRace',false);$('title').value='';setTags([]);S.created=new Date();refresh()}
 function reverse(){if(S.wps.length<2)return;pushHist();S.wps.reverse();S.segs=S.segs.reverse().map(s=>s.slice().reverse());refresh()}
 function fit(){const p=path();if(p.length>1){const b=new maplibregl.LngLatBounds();p.forEach(q=>b.extend([q[1],q[0]]));map.fitBounds(b,{padding:80,duration:600})}}
-function store(){try{return JSON.parse(localStorage.getItem('routes')||'[]')}catch(e){return[]}}
-function put(a){try{localStorage.setItem('routes',JSON.stringify(a))}catch(e){toast('Could not save. Browser storage is blocked.')}}
-const sigOf=(name,w,m,ob,rc)=>JSON.stringify([(name||'').trim(),w.map(p=>[+p[0].toFixed(5),+p[1].toFixed(5)]),m?1:0,ob?1:0,rc?1:0]);
-const curSig=()=>sigOf($('title').value,S.wps,S.snap,S.ob,S.race);
+/* Saved routes live in localStorage (about 5 MB). Each segment's points are stored as an encoded polyline
+   (Google's format at 1e-6 degrees, about 10 cm) instead of [[lat,lng],...], which is roughly 7x smaller.
+   A leading "!" marks a straight free-form segment (the 3rd value on its points). store() always returns plain
+   arrays and put() always writes the compact form; old array-style data and backups still load. */
+function pEnc(pts){const fm=pts.length&&pts[0][2]?'!':'';let o='',pa=0,po=0;
+ for(const p of pts){const a=Math.round(p[0]*1e6),b=Math.round(p[1]*1e6);
+  for(let d of[a-pa,b-po]){d=d<0?~(d<<1):d<<1;while(d>=32){o+=String.fromCharCode((32|(d&31))+63);d>>=5}o+=String.fromCharCode(d+63)}
+  pa=a;po=b}
+ return fm+o}
+function pDec(s){const fm=s[0]==='!';if(fm)s=s.slice(1);const o=[];let i=0,a=0,b=0;
+ const nx=()=>{let r=0,sh=0,c;do{c=s.charCodeAt(i++)-63;r|=(c&31)<<sh;sh+=5}while(c>=32&&i<s.length);return r&1?~(r>>1):r>>1};
+ while(i<s.length){a+=nx();b+=nx();o.push(fm?[a/1e6,b/1e6,1]:[a/1e6,b/1e6])}
+ return o}
+const pack=r=>({...r,segs:(r.segs||[]).map(g=>typeof g==='string'?g:pEnc(g))});
+let RC={raw:null,arr:null,legacy:false}; // decoded copy of the stored routes, reused until the stored text changes
+function store(){let raw=null;try{raw=localStorage.getItem('routes')}catch(e){}
+ if(RC.arr===null||raw!==RC.raw){let arr=[],lg=false;
+  try{arr=JSON.parse(raw||'[]');if(!Array.isArray(arr))arr=[]}catch(e){arr=[]}
+  arr=arr.map(r=>r&&Array.isArray(r.segs)?{...r,segs:r.segs.map(g=>{if(typeof g==='string')return pDec(g);lg=true;return g})}:r);
+  RC={raw,arr,legacy:lg}}
+ return RC.arr.slice()}
+function put(a){ // true if saved; says why if not
+ const s=JSON.stringify(a.map(pack));
+ try{localStorage.setItem('routes',s);RC={raw:null,arr:null,legacy:false};return true}
+ catch(e){const q=e&&(e.name==='QuotaExceededError'||e.name==='NS_ERROR_DOM_QUOTA_REACHED'||e.code===22||e.code===1014);
+  toast(q?'Not saved: browser storage is full. Back up your routes, then delete some.':'Could not save. Browser storage is blocked.');return false}}
+function migrate(){store();if(RC.legacy)put(store())} // re-saves old array-style routes in the compact form, once
+const tagKey=t=>String(t).toLowerCase();
+const cleanTag=t=>String(t).replace(/\s+/g,' ').trim().slice(0,24);
+function addTag(a,t){t=cleanTag(t);if(t&&a.length<10&&!a.some(x=>tagKey(x)===tagKey(t)))a.push(t);return a}
+function tagEditor(chipsEl,inputEl,get,set){ // chips + text field; Enter, comma or leaving the field adds a tag
+ const draw=()=>{chipsEl.textContent='';get().forEach(t=>{const c=document.createElement('span');c.className='chip';c.appendChild(document.createTextNode(t));
+  const b=document.createElement('button');b.type='button';b.textContent='×';b.setAttribute('aria-label','Remove tag '+t);b.onclick=()=>{set(get().filter(x=>x!==t));draw()};c.appendChild(b);chipsEl.appendChild(c)})};
+ const commit=()=>{const v=inputEl.value;inputEl.value='';if(!v.trim())return;const a=get().slice();v.split(',').forEach(x=>addTag(a,x));if(a.length!==get().length){set(a);draw()}};
+ inputEl.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===','){e.preventDefault();commit()}else if(e.key==='Backspace'&&!inputEl.value&&get().length){set(get().slice(0,-1));draw()}});
+ inputEl.addEventListener('input',e=>{if(e.inputType==='insertReplacementText'||inputEl.value.includes(','))commit()});
+ inputEl.addEventListener('blur',commit);
+ return{draw,commit}}
+const sigOf=(name,w,m,ob,rc,tg)=>JSON.stringify([(name||'').trim(),w.map(p=>[+p[0].toFixed(5),+p[1].toFixed(5)]),m?1:0,ob?1:0,rc?1:0,(tg||[]).map(tagKey).sort().join('|')]);
+const curSig=()=>sigOf($('title').value,S.wps,S.snap,S.ob,S.race,S.tags);
 function findMatch(){ // the saved route this one would overwrite: only the one it was loaded from or saved as (names may repeat)
  const a=store();return(S.id&&a.find(x=>x.id===S.id))||null;
 }
 function updateSaveBtn(){
- const b=$('bSave'),m=findMatch(),dirty=!!m&&sigOf(m.name,m.w,m.m,m.ob,!!m.tag)!==curSig();
+ const b=$('bSave'),m=findMatch(),dirty=!!m&&sigOf(m.name,m.w,m.m,m.ob,!!m.tag,m.tags)!==curSig();
  b.textContent=dirty?'Update route':'Save route'; // 'Update' only once a saved route has changed
  b.disabled=S.wps.length<2||(!!m&&!dirty);
 }
 function save(){
  if(S.wps.length<2)return;
+ tgEd.commit(); // pick up a tag that was typed but not confirmed yet
  const a=store(),m=findMatch();const name=$('title').value.trim();
- const o={id:m?m.id:Date.now().toString(36)+Math.random().toString(36).slice(2,5),name,date:m?m.date:+S.created,dist:S.dist,up:S.up,tag:S.race?'race':'',w:S.wps,m:S.snap?1:0,ob:S.ob?1:0,segs:S.segs};
- S.id=o.id;const i=a.findIndex(r=>r.id===o.id);i>=0?a[i]=o:a.push(o);put(a);list();toast(m?'Route updated.':'Route saved.');
+ // tag = the Race route flag; tags = the labels you add yourself
+ const o={id:m?m.id:Date.now().toString(36)+Math.random().toString(36).slice(2,5),name,date:m?m.date:+S.created,dist:S.dist,up:S.up,tag:S.race?'race':'',tags:S.tags.slice(),w:S.wps,m:S.snap?1:0,ob:S.ob?1:0,segs:S.segs};
+ const i=a.findIndex(r=>r.id===o.id);i>=0?a[i]=o:a.push(o);
+ if(!put(a))return; // put() already told the user why; never claim success here
+ S.id=o.id;list();toast(m?'Route updated.':'Route saved.');
 }
 const TRASH='<svg viewBox="0 0 24 24"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 12a2 2 0 002 2h6a2 2 0 002-2l1-12M9 7V4h6v3"/></svg>';
 const pretty=s=>s.replace(/[_-]+/g,' ').replace(/^./,c=>c.toUpperCase());
@@ -779,36 +852,72 @@ function mapThumb(it){
  });
 }
 const IC_DL='<svg viewBox="0 0 24 24"><path d="M12 4v10M8 10l4 4 4-4M5 19h14"/></svg>';
+const IC_TAG='<svg viewBox="0 0 24 24"><path d="M20.6 13.4l-7.2 7.2a2 2 0 01-2.8 0L2 12V2h10l8.6 8.6a2 2 0 010 2.8z"/><path d="M7 7h.01"/></svg>';
 function card(it){
  const d=document.createElement('div');d.className='gc'+(it.cur?' cur':'');d.tabIndex=0;d.setAttribute('role','button');d.setAttribute('aria-label','Load '+it.name);
  d.innerHTML=`<div class="th">${thumb(it.pts)}<div class="ac2"></div></div><div class="nm"></div>`;
  d.querySelector('.nm').textContent=it.name;d.title=fdu(it.dist)+(it.up!=null?' · '+it.up+' m':'');
  const th=d.querySelector('.th');th.dataset.k=tkey(it);const tc=TC.get(th.dataset.k);if(tc)paintTh(th,tc);else if(document.body.classList.contains('menu'))mapThumb(it);
  const ac=d.querySelector('.ac2');
- [['Download',IC_DL,it.dl],['Delete',TRASH,it.del]].forEach(([t,ic,f])=>{if(!f)return;const b=document.createElement('button');b.type='button';b.innerHTML=ic;b.title=t;b.setAttribute('aria-label',t+' '+it.name);b.onclick=e=>{e.stopPropagation();f()};ac.appendChild(b)});
+ [['Download',IC_DL,it.dl],['Tags',IC_TAG,it.tag],['Delete',TRASH,it.del]].forEach(([t,ic,f])=>{if(!f)return;const b=document.createElement('button');b.type='button';b.innerHTML=ic;b.title=t;b.setAttribute('aria-label',t+' '+it.name);b.onclick=e=>{e.stopPropagation();f()};ac.appendChild(b)});
+ if(!ac.children.length)ac.remove();
+ d.onclick=it.open;d.onkeydown=e=>{if(e.key==='Enter'&&e.target===d)it.open()};
+ return d;
+}
+function row(it){ // list view: name (+ tags) and distance, no map thumbnail
+ const d=document.createElement('div');d.className='lr'+(it.cur?' cur':'');d.tabIndex=0;d.setAttribute('role','button');d.setAttribute('aria-label','Load '+it.name);
+ d.innerHTML='<div class="rm"><span class="rn"></span><span class="rg"></span></div><span class="rd"></span><div class="ra"></div>';
+ d.querySelector('.rn').textContent=it.name;
+ const tg=it.r&&it.r.tags&&it.r.tags.length?it.r.tags.join(' · '):'',g=d.querySelector('.rg');if(tg)g.textContent=tg;else g.remove();
+ d.querySelector('.rd').textContent=it.dist!=null?fdu(it.dist):'';d.title=(it.dist!=null?fdu(it.dist):'')+(it.up!=null?' · '+it.up+' m':'');
+ const ac=d.querySelector('.ra');
+ [['Download',IC_DL,it.dl],['Tags',IC_TAG,it.tag],['Delete',TRASH,it.del]].forEach(([t,ic,f])=>{if(!f)return;const b=document.createElement('button');b.type='button';b.innerHTML=ic;b.title=t;b.setAttribute('aria-label',t+' '+it.name);b.onclick=e=>{e.stopPropagation();f()};ac.appendChild(b)});
  if(!ac.children.length)ac.remove();
  d.onclick=it.open;d.onkeydown=e=>{if(e.key==='Enter'&&e.target===d)it.open()};
  return d;
 }
 const routePts=r=>{let p=r.segs.flat();if(r.ob&&p.length>1)p=p.concat(p.slice(0,-1).reverse());return p};
 const nat=(a,b)=>a.name.localeCompare(b.name,undefined,{numeric:true,sensitivity:'base'});
+function drawFilter(T){ // tag chips above the saved routes: All + one per tag in use
+ const box=$('tgFil');box.textContent='';if(!T.size)return;
+ const add=(label,key,n)=>{const b=document.createElement('button');b.type='button';b.className='chip f';b.textContent=n!=null?label+' ('+n+')':label;
+  b.setAttribute('aria-pressed',String(S.tagF===key));b.onclick=()=>{S.tagF=S.tagF===key?null:key;list()};box.appendChild(b)};
+ add('All',null);
+ [...T.entries()].sort((x,y)=>x[1].label.localeCompare(y[1].label,undefined,{numeric:true,sensitivity:'base'})).forEach(([k,e])=>add(e.label,k,e.n));
+}
 function list(){
  const a=store(),G={mine:[],race:[],major:[]};
  const items=a.map(r=>({r,name:r.name||'Untitled route',key:'u'+r.id+':'+Math.round(r.dist||0)+':'+r.w.length,dist:r.dist,up:r.up,pts:r.segs.flat(),cur:S.id===r.id,open:()=>{load(r);mobileClose()},
   dl:()=>saveGpx(r.name,routePts(r).map(p=>trkpt(p,null))),
-  del:()=>{put(store().filter(x=>x.id!==r.id));if(S.id===r.id)S.id=null;list();toast('Saved route removed.')}})); // leaves the route on the map
- items.forEach(it=>(it.r.tag==='race'?G.race:G.mine).push(it));
- LIB.forEach(l=>(l.cat==='major'?G.major:l.cat==='race'?G.race:G.mine).push({name:l.name,key:'l'+l.file,dist:l.dist,pts:l.pts,
+  tag:()=>quickTag(r.id),
+  del:()=>{if(!put(store().filter(x=>x.id!==r.id)))return;if(S.id===r.id)S.id=null;list();toast('Saved route removed.')}})); // leaves the route on the map
+ const T=new Map();a.forEach(r=>(r.tags||[]).forEach(t=>{const k=tagKey(t),e=T.get(k);e?e.n++:T.set(k,{label:t,n:1})}));
+ if(S.tagF&&!T.has(S.tagF))S.tagF=null;
+ drawFilter(T);const dl=$('tgList');dl.textContent='';T.forEach(e=>{const o=document.createElement('option');o.value=e.label;dl.appendChild(o)});
+ const f=S.tagF,shown=f?items.filter(it=>(it.r.tags||[]).some(t=>tagKey(t)===f)):items; // GPX files in ./saved have no tags, so a tag filter hides them
+ shown.forEach(it=>(it.r.tag==='race'?G.race:G.mine).push(it));
+ if(!f)LIB.forEach(l=>(l.cat==='major'?G.major:l.cat==='race'?G.race:G.mine).push({name:l.name,key:'l'+l.file,dist:l.dist,pts:l.pts,
   open:()=>{importPts(l.pts,l.name);list();mobileClose()},
   dl:()=>{const x=document.createElement('a');x.href='saved/'+encodeURIComponent(l.file);x.download=l.file;document.body.appendChild(x);x.click();x.remove()}}));
- const fill=(id,arr,em)=>{const box=$(id);box.textContent='';
-  if(!arr.length){const d=document.createElement('div');d.className='mute';d.style.gridColumn='1/-1';d.textContent=em;box.appendChild(d)}
-  arr.forEach(it=>box.appendChild(card(it)))};
+ const mk=S.view==='list'?row:card;
+ const fill=(id,arr,em,fn)=>{const box=$(id);box.textContent='';
+  if(!arr.length){const d=document.createElement('div');d.className='mute';d.style.gridColumn='1/-1';d.textContent=f?'No routes with this tag.':em;box.appendChild(d)}
+  arr.forEach(it=>box.appendChild((fn||mk)(it)))};
  Object.values(G).forEach(g=>g.sort(nat));
- fill('gRecent',items.slice().reverse().slice(0,2),'Nothing saved yet');fill('gMine',G.mine,'Nothing saved yet');fill('gRace',G.race,'No race routes yet. Turn on “Race route” when saving.');fill('gMaj',G.major,'Add major-*.gpx files to the saved folder.');
+ fill('gRecent',items.slice().reverse().slice(0,2),'Nothing saved yet',card);fill('gMine',G.mine,'Nothing saved yet');fill('gRace',G.race,'No race routes yet. Turn on “Race route” when saving.');fill('gMaj',G.major,'Add major-*.gpx files to the saved folder.');
  const cnt=a.length+LIB.length;$('savedHd').textContent='Saved Routes'+(cnt?' ('+cnt+')':'');
  updateSaveBtn();
 }
+/* tags on a saved route, edited from its card or row without loading it */
+const TD={id:null,tags:[]};
+function quickTag(id){const r=store().find(x=>x.id===id);if(!r)return;TD.id=id;TD.tags=(r.tags||[]).slice();
+ $('tgTitle').textContent='Tags for '+(r.name||'Untitled route');$('tgIn2').value='';$('tgDlg').classList.add('open');tdEd.draw();setTimeout(()=>$('tgIn2').focus(),0)}
+function closeTags(ok){tdEd.commit();$('tgDlg').classList.remove('open');if(!ok)return;
+ const a=store(),i=a.findIndex(x=>x.id===TD.id);if(i<0)return;
+ a[i]={...a[i],tags:TD.tags.slice()};
+ if(put(a)){if(S.id===TD.id){setTags(TD.tags)}list()}}
+function setView(v,quiet){S.view=v==='list'?'list':'grid';try{localStorage.setItem('sview',S.view)}catch(e){}
+ document.body.classList.toggle('lv',S.view==='list');document.querySelectorAll('#vSeg button').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.v===S.view)));if(!quiet)list()}
 /* GPX files in ./saved: major-*.gpx = World majors, race-*.gpx = Race routes, regular-*.gpx = My routes */
 const LIB=[];let libState=0;
 async function listDir(dir,ext){ // python3 -m http.server serves a directory index; static hosts like Vercel don't, so fall back to dir/index.json (a list of file names)
@@ -834,7 +943,7 @@ function importPts(pts,name){
  if(pts.length<2){toast('No track found in that GPX file.');return}
  pushHist();const n=pts.length,k=Math.min(30,n),ix=[...new Set(Array.from({length:k},(_,i)=>Math.round(i*(n-1)/(k-1))))];
  S.wps=ix.map(i=>pts[i].slice());S.segs=ix.slice(1).map((v,i)=>pts.slice(ix[i],v+1).map(p=>p.slice()));
- S.ob=false;setSw('tOb',false);S.id=null;S.race=false;setSw('tRace',false);S.created=new Date();$('title').value=name||'';
+ S.ob=false;setSw('tOb',false);S.id=null;S.race=false;setSw('tRace',false);setTags([]);S.created=new Date();$('title').value=name||'';
  refresh();fit();
 }
 function trkpt(p,e){return`<trkpt lat="${p[0].toFixed(6)}" lon="${p[1].toFixed(6)}">${e==null?'':'<ele>'+e.toFixed(1)+'</ele>'}</trkpt>`}
@@ -889,7 +998,7 @@ function setHome(p,quiet){
 }
 function load(r){ // replaces whatever is on the map
  S.hist=[];S.id=r.id;$('title').value=r.name;S.created=new Date(r.date);
- S.wps=r.w.map(p=>p.slice());S.segs=r.segs.map(g=>g.map(p=>p.slice()));S.ob=!!r.ob;setSw('tOb',S.ob);S.race=r.tag==='race';setSw('tRace',S.race);setManual(!r.m,true);
+ S.wps=r.w.map(p=>p.slice());S.segs=r.segs.map(g=>g.map(p=>p.slice()));S.ob=!!r.ob;setSw('tOb',S.ob);S.race=r.tag==='race';setSw('tRace',S.race);setTags(r.tags||[]);setManual(!r.m,true);
  refresh();fit();list();
 }
 function setManual(v,quiet){
@@ -925,13 +1034,14 @@ $('dBigU').onclick=()=>setUnit(S.unit==='km'?'mi':'km');
 $('bSaved').onclick=()=>{document.body.classList.add('sv');loadLib();chkScroll()};$('bBack').onclick=()=>{document.body.classList.remove('sv');chkScroll()};
 $('tRace').onclick=()=>{S.race=!S.race;setSw('tRace',S.race);updateSaveBtn()};
 $('bBak').onclick=()=>{const a=store();if(!a.length){toast('No saved routes to back up yet.');return}
- const x=document.createElement('a');x.href=URL.createObjectURL(new Blob([JSON.stringify(a)],{type:'application/json'}));x.download='route-planner-backup-'+new Date().toISOString().slice(0,10)+'.json';
+ const x=document.createElement('a');x.href=URL.createObjectURL(new Blob([JSON.stringify(a.map(pack))],{type:'application/json'}));x.download='route-planner-backup-'+new Date().toISOString().slice(0,10)+'.json';
  document.body.appendChild(x);x.click();x.remove();setTimeout(()=>URL.revokeObjectURL(x.href),1000)};
 $('bRst').onclick=()=>$('rIn').click();
 $('rIn').onchange=async e=>{const f=e.target.files[0];e.target.value='';if(!f)return;
  try{const inc=JSON.parse(await f.text());if(!Array.isArray(inc))throw 0;const have=store(),ids=new Set(have.map(r=>r.id));let n=0;
-  inc.forEach(r=>{if(r&&r.id&&Array.isArray(r.segs)&&Array.isArray(r.w)&&!ids.has(r.id)){have.push(r);ids.add(r.id);n++}});
-  put(have);list();toast(n?`Restored ${n} route${n===1?'':'s'}.`:'Those routes are already saved.')}catch(x){toast('That file is not a route backup.')}};
+  inc.forEach(r=>{if(r&&r.id&&Array.isArray(r.segs)&&Array.isArray(r.w)&&!ids.has(r.id)){have.push({...r,segs:r.segs.map(g=>typeof g==='string'?pDec(g):g)});ids.add(r.id);n++}});
+  if(!n){toast('Those routes are already saved.');return}
+  if(put(have)){list();toast(`Restored ${n} route${n===1?'':'s'}.`)}}catch(x){toast('That file is not a route backup.')}};
 $('lImp').onclick=()=>$('gIn').click();$('lExp').onclick=exportGpx;
 $('gIn').onchange=async e=>{const f=e.target.files[0];e.target.value='';if(!f)return;
  try{const g=parseGpx(await f.text());importPts(g.pts,g.name||f.name.replace(/\.gpx$/i,''));closeMenu()}catch(x){toast('Could not read that GPX file.')}};
@@ -967,7 +1077,15 @@ applyAccent(/^#[0-9a-f]{6}$/i.test(saved||'')?saved:null);
 S.dark=DARKS.includes(S.style);document.body.classList.toggle('dark',S.dark);setSw('tDk',S.dark);Object.keys(POIS).forEach(id=>setSw(id,S.poi[POIS[id]]));applyAccent(S.accent);
 S.styles=DEFSTYLES.slice();renderStyles();initStyles();setHome(S.home,true);
 {const p0=parseInt(LS('pace'),10);if(p0>0&&p0<6000){$('pm').value=Math.floor(p0/60);$('ps').value=String(p0%60).padStart(2,'0')}}
-setUnit(LS('unit')==='mi'?'mi':'km',true);list();refresh();loadLib();
+setUnit(LS('unit')==='mi'?'mi':'km',true);
+const tgEd=tagEditor($('tgChips'),$('tgIn'),()=>S.tags,v=>{S.tags=v;updateSaveBtn()});
+const tdEd=tagEditor($('tgChips2'),$('tgIn2'),()=>TD.tags,v=>{TD.tags=v});
+function setTags(v){S.tags=v.slice();$('tgIn').value='';tgEd.draw();updateSaveBtn()}
+$('tgDone').onclick=()=>closeTags(true);$('tgCancel').onclick=()=>closeTags(false);
+$('tgDlg').addEventListener('keydown',e=>{if(e.key==='Escape'){e.stopPropagation();closeTags(false)}});
+$('tgDlg').addEventListener('mousedown',e=>{if(e.target===$('tgDlg'))closeTags(false)});
+document.querySelectorAll('#vSeg button').forEach(b=>b.onclick=()=>setView(b.dataset.v));
+setView(S.view,true);migrate();list();refresh();loadLib();
 if(!S.home&&navigator.geolocation)navigator.geolocation.getCurrentPosition(p=>map.jumpTo({center:[p.coords.longitude,p.coords.latitude],zoom:14}),()=>{});
 </script>
 </body>
