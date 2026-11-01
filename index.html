@@ -257,6 +257,32 @@ body.lv #pgS .gr{display:flex;flex-direction:column;gap:0}
 #tgDlg{position:absolute;inset:0;z-index:30;display:none;align-items:center;justify-content:center;padding:24px;background:rgba(12,12,13,.42)}
 #tgDlg.open{display:flex}
 #tgBox{width:100%;max-width:360px;box-sizing:border-box;background:var(--bg);border:1px solid var(--line);border-radius:12px;padding:20px;display:flex;flex-direction:column;gap:12px;box-shadow:0 6px 24px rgba(0,0,0,.18)}
+
+/* accordions, tags button + panel, checkbox, header close button, end-at-start popup */
+[hidden]{display:none!important}
+.acc>summary{list-style:none;display:flex;align-items:center;justify-content:space-between;gap:8px;cursor:pointer;min-height:32px;border-radius:8px}
+.acc>summary::-webkit-details-marker{display:none}
+.acc>summary:focus-visible{outline:2px solid var(--acc);outline-offset:2px}
+.acc .chev{flex:none;width:12px;height:8px;fill:none;stroke:var(--mute);stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;transition:transform .15s}
+.acc:not([open]) .chev{transform:rotate(-90deg)}
+.acc[open]>summary{margin-bottom:8px}
+#vTop{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.tbtn{display:inline-flex;align-items:center;gap:6px;height:28px;max-width:60%;padding:0 12px;border:1px solid var(--line);border-radius:16px;background:none;color:var(--ink);font:400 12px/16px Inter,system-ui,sans-serif;cursor:pointer}
+.tbtn span{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.tbtn:hover{background:var(--hover)}
+.tbtn.on{border-color:var(--acc);color:var(--accT)}
+.tbtn svg{flex:none;width:10px;height:6px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;transition:transform .15s}
+.tbtn[aria-expanded=true] svg{transform:rotate(180deg)}
+#tgPane{border-top:1px solid var(--div);border-bottom:1px solid var(--div);padding:12px 0}
+.ck{display:flex;align-items:center;gap:10px;min-height:24px;font-size:14px;line-height:17px;color:var(--mute);cursor:pointer}
+.ck input{flex:none;width:18px;height:18px;margin:0;accent-color:var(--acc);cursor:pointer}
+.cx{flex:none;width:40px;height:40px;margin:-4px 0;border-radius:50%;border:1px solid var(--line);background:var(--bg);color:var(--ink);display:grid;place-items:center;cursor:pointer;padding:0}
+.cx:hover{background-image:linear-gradient(var(--hover),var(--hover))}
+.cx svg{width:24px;height:24px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round}
+#endPop{position:fixed;z-index:30;display:none;width:236px;box-sizing:border-box;background:var(--bg);border:1px solid var(--line);border-radius:12px;box-shadow:0 6px 24px rgba(0,0,0,.14);padding:12px;flex-direction:column;gap:10px}
+#endPop.open{display:flex}
+#endPop p{margin:0;font-size:14px;line-height:18px;color:var(--ink)}
+#endPop .ep{display:flex;justify-content:flex-end;align-items:center;gap:12px}
 </style>
 </head>
 <body class="ne">
@@ -264,7 +290,7 @@ body.lv #pgS .gr{display:flex;flex-direction:column;gap:0}
  <aside id="card" aria-label="Route menu">
   <div class="pgs">
   <div class="pg" id="pgM">
-  <div class="hd"><h1>Route Planner</h1><button class="lnk xc" type="button" style="font-size:14px;padding:0">Close</button></div>
+  <div class="hd"><h1>Route Planner</h1><button class="cx" type="button" aria-label="Close menu"><svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>
   <section class="sec">
    <h2>Routing</h2>
    <div class="col" style="gap:8px">
@@ -296,8 +322,8 @@ body.lv #pgS .gr{display:flex;flex-direction:column;gap:0}
    <div class="col" style="gap:24px">
     <div class="col" style="gap:16px">
      <div class="col" style="gap:8px"><input class="fld" id="title" value="" aria-label="Route name"><div class="mute sm" id="created"></div></div>
-     <div class="tg"><span>Race route</span><button class="sw" id="tRace" role="switch" aria-checked="false" aria-label="Race route"></button></div>
-     <div class="col" style="gap:8px"><div class="tgs" id="tgChips"></div><input class="fld" id="tgIn" list="tgList" placeholder="Add a tag, press Enter" maxlength="40" aria-label="Add a tag" autocomplete="off" enterkeyhint="done"></div><datalist id="tgList"></datalist>
+     <div class="col" style="gap:8px"><label class="lb2" for="tgIn">Tags</label><input class="fld" id="tgIn" list="tgList" placeholder="Add a tag, press Enter" maxlength="40" autocomplete="off" enterkeyhint="done"><div class="tgs" id="tgChips"></div></div><datalist id="tgList"></datalist>
+     <label class="ck"><input type="checkbox" id="tRace"><span>This route is a race</span></label>
      <button class="btn pri" id="bSave" disabled>Save route</button>
      <div class="cp" style="gap:16px"><button class="lnk" id="lImp" type="button">Import GPX</button><button class="lnk" id="lExp" type="button">Download this GPX</button></div>
     </div>
@@ -305,6 +331,7 @@ body.lv #pgS .gr{display:flex;flex-direction:column;gap:0}
     <div class="col" style="gap:8px">
      <div class="cp" style="gap:8px"><span class="lb2" style="flex:1" id="savedHd">Saved Routes</span><button class="lnk sn" id="bSaved" type="button"><span style="text-decoration:inherit">View all</span><svg viewBox="0 0 5 9"><path d="M.8.8L4.2 4.5.8 8.2"/></svg></button></div>
      <div class="gr" id="gRecent"></div>
+     <div class="cp" style="gap:16px;margin-top:8px"><button class="lnk" id="bBak" type="button">Back up routes</button><button class="lnk" id="bRst" type="button">Restore from backup</button></div>
     </div>
    </div>
   </section>
@@ -312,15 +339,15 @@ body.lv #pgS .gr{display:flex;flex-direction:column;gap:0}
   <div class="pg" id="pgS">
    <div class="hd"><button class="lnk" id="bBack" type="button" style="font-size:14px;padding:0">‹ Back</button><button class="lnk xc" type="button" style="font-size:14px;padding:0">Close</button></div>
    <h1 style="padding:0 24px">Saved Routes</h1>
-   <section class="sec" id="vBar"><div class="seg" id="vSeg" role="group" aria-label="Saved routes view"><button type="button" data-v="grid" aria-pressed="true">Grid</button><button type="button" data-v="list" aria-pressed="false">List</button></div><div class="tgs" id="tgFil" role="group" aria-label="Filter by tag"></div></section>
-   <section class="sec"><h2>My Routes</h2><div class="gr" id="gMine"></div><div class="cp" style="gap:16px;margin-top:8px"><button class="lnk" id="bBak" type="button">Back up routes</button><button class="lnk" id="bRst" type="button">Restore from backup</button></div></section>
+   <section class="sec" id="vBar"><div id="vTop"><div class="seg" id="vSeg" role="group" aria-label="Saved routes view"><button type="button" data-v="grid" aria-pressed="true">Grid</button><button type="button" data-v="list" aria-pressed="false">List</button></div><button class="tbtn" id="tgBtn" type="button" aria-expanded="false" aria-controls="tgPane" hidden><span id="tgBtnTx">Tags</span><svg viewBox="0 0 10 6"><path d="M1 1l4 4 4-4"/></svg></button></div><div id="tgPane" hidden><div class="tgs" id="tgFil" role="group" aria-label="Filter by tag"></div></div></section>
+   <section class="sec"><details class="acc" open><summary><h2>My Routes</h2><svg class="chev" viewBox="0 0 12 8"><path d="M1 1.5l5 5 5-5"/></svg></summary><div class="gr" id="gMine"></div></details></section>
    <hr class="dash mg">
-   <section class="sec"><h2>Race Routes</h2><div class="gr" id="gRace"></div></section>
+   <section class="sec"><details class="acc" open><summary><h2>Race Routes</h2><svg class="chev" viewBox="0 0 12 8"><path d="M1 1.5l5 5 5-5"/></svg></summary><div class="gr" id="gRace"></div></details></section>
    <hr class="dash mg">
-   <section class="sec"><h2>World Majors</h2><div class="gr" id="gMaj"></div></section>
+   <section class="sec"><details class="acc" open><summary><h2>World Majors</h2><svg class="chev" viewBox="0 0 12 8"><path d="M1 1.5l5 5 5-5"/></svg></summary><div class="gr" id="gMaj"></div></details></section>
   </div>
   </div>
-  <div id="tgDlg" role="dialog" aria-modal="true" aria-labelledby="tgTitle"><div id="tgBox"><h2 id="tgTitle" style="font-size:16px;line-height:20px"></h2><div class="tgs" id="tgChips2"></div><input class="fld" id="tgIn2" list="tgList" placeholder="Add a tag, press Enter" maxlength="40" aria-label="Add a tag" autocomplete="off" enterkeyhint="done"><div class="cp" style="justify-content:flex-end;gap:16px"><button class="lnk" id="tgCancel" type="button" style="font-size:14px">Cancel</button><button class="btn pri" id="tgDone" type="button" style="width:auto;padding:0 24px;height:36px">Done</button></div></div></div>
+  <div id="tgDlg" role="dialog" aria-modal="true" aria-labelledby="tgTitle"><div id="tgBox"><h2 id="tgTitle" style="font-size:16px;line-height:20px">Edit route</h2><input class="fld" id="edName" placeholder="Route name" maxlength="80" aria-label="Route name" autocomplete="off"><div class="col" style="gap:8px"><label class="lb2" for="tgIn2">Tags</label><input class="fld" id="tgIn2" list="tgList" placeholder="Add a tag, press Enter" maxlength="40" autocomplete="off" enterkeyhint="done"><div class="tgs" id="tgChips2"></div></div><label class="ck"><input type="checkbox" id="edRace"><span>This route is a race</span></label><div class="cp" style="justify-content:flex-end;gap:16px"><button class="lnk" id="tgCancel" type="button" style="font-size:14px">Cancel</button><button class="btn pri" id="tgDone" type="button" style="width:auto;padding:0 24px;height:36px">Done</button></div></div></div>
  </aside>
  <div id="scrim"></div>
  <div id="mapbox">
@@ -355,6 +382,7 @@ body.lv #pgS .gr{display:flex;flex-direction:column;gap:0}
  <div id="elev"><div id="eStats"><span>Gain <b id="sUp2">–</b></span><span>Loss <b id="sDown2">–</b></span></div><canvas id="cv"></canvas></div>
 </div>
 
+<div id="endPop" role="dialog" aria-label="End the route at the start"><p>End the route back at this dot?</p><div class="ep"><button class="lnk" id="epNo" type="button" style="font-size:14px">Cancel</button><button class="btn pri" id="epYes" type="button" style="width:auto;height:36px;padding:0 18px">End here</button></div></div>
 <div id="ctx" role="menu"><button type="button" role="menuitem" id="ctxDel">Remove point</button></div>
 <input type="file" id="gIn" accept=".gpx,application/gpx+xml" hidden>
 <input type="file" id="rIn" accept=".json,application/json" hidden>
@@ -370,7 +398,7 @@ const DARKS=['dark','dark_matter'];
 let ROUTE_COLOR='#9749ff';
 const DEF={route:'#5b2d98',acc:'#5b2d98'};
 let HM=null;try{HM=JSON.parse(LS('home'))}catch(e){}
-const S={accent:null,wps:[],segs:[],snap:true,ob:false,km:true,unit:'km',style:LS('style')||'bright',styles:[],home:Array.isArray(HM)&&HM.length===2?HM:null,sp:LS('sp')==='bike'?'bike':'foot',race:false,poi:(()=>{const d={water:true,wc:false,parking:false};try{const s=JSON.parse(LS('poi'))||{};if(LS('poiv')!=='2'){s.wc=false;s.parking=false;try{localStorage.setItem('poiv','2');localStorage.setItem('poi',JSON.stringify(Object.assign(d,s)))}catch(e){}} /* one-time reset: washrooms and parking now start off */return Object.assign(d,s)}catch(e){return d}})(),created:new Date(),id:null,tags:[],tagF:null,view:LS('sview')==='list'?'list':'grid',prof:[],pts:[],dist:0,hist:[]};
+const S={accent:null,wps:[],segs:[],snap:true,ob:false,km:true,unit:'km',style:LS('style')||'bright',styles:[],home:Array.isArray(HM)&&HM.length===2?HM:null,sp:(()=>{if(LS('spv')!=='2'){try{localStorage.setItem('spv','2');localStorage.setItem('sp','bike')}catch(e){}return'bike'}return LS('sp')==='foot'?'foot':'bike'})(),race:false,poi:(()=>{const d={water:true,wc:false,parking:false};try{const s=JSON.parse(LS('poi'))||{};if(LS('poiv')!=='2'){s.wc=false;s.parking=false;try{localStorage.setItem('poiv','2');localStorage.setItem('poi',JSON.stringify(Object.assign(d,s)))}catch(e){}} /* one-time reset: washrooms and parking now start off */return Object.assign(d,s)}catch(e){return d}})(),created:new Date(),id:null,tags:[],tagF:null,tgOpen:false,view:LS('sview')==='list'?'list':'grid',prof:[],pts:[],dist:0,hist:[]};
 
 /* ---------- helpers ---------- */
 function toast(t){const m=$('msg');m.textContent=t;m.style.display='block';clearTimeout(toast.t);toast.t=setTimeout(()=>m.style.display='none',3200)}
@@ -577,20 +605,39 @@ addEventListener('pointerdown',e=>{if(!(e.target.closest&&e.target.closest('#ctx
 addEventListener('keydown',e=>{if(e.key==='Escape')ctxHide()});
 map.on('movestart',ctxHide);
 
+/* ---------- tap the start dot: offer to end the route back there ---------- */
+let endN=0;
+function endHide(){$('endPop').classList.remove('open')}
+function endShow(el){
+ const r=el.getBoundingClientRect(),c=$('endPop');endN=S.wps.length;c.classList.add('open');
+ const w=c.offsetWidth,x=Math.max(8+w/2,Math.min(innerWidth-8-w/2,r.left+r.width/2)),above=r.top>c.offsetHeight+30;
+ c.style.left=x+'px';c.style.top=(above?r.top-10:r.bottom+10)+'px';c.style.transform=above?'translate(-50%,-100%)':'translate(-50%,0)';
+}
+const atStart=()=>{const n=S.wps.length;return n>1&&S.wps[0][0]===S.wps[n-1][0]&&S.wps[0][1]===S.wps[n-1][1]};
+async function endAtStart(){endHide();if(S.wps.length<2||atStart())return;await addPoint(S.wps[0].slice());toast('Route now ends at the start. Undo brings it back.')}
+$('epYes').onclick=endAtStart;$('epNo').onclick=endHide;
+addEventListener('pointerdown',e=>{if(!(e.target.closest&&e.target.closest('#endPop')))endHide()},true);
+addEventListener('keydown',e=>{if(e.key==='Escape')endHide()});
+map.on('movestart',endHide);
+
 /* ---------- drawing ---------- */
 const wpMk=[],kmMk=[];
 function drawWps(){
- ctxHide();wpMk.forEach(m=>m.remove());wpMk.length=0;const n=S.wps.length;
+ ctxHide();if(S.wps.length!==endN)endHide(); // keep the popup through background redraws, close it if the route itself changed
+ wpMk.forEach(m=>m.remove());wpMk.length=0;const n=S.wps.length;
  S.wps.forEach((p,i)=>{
   const el=document.createElement('div');el.className='wp'+(i===0?' s':i===n-1?' e':'');
   el.addEventListener('contextmenu',e=>{e.preventDefault();e.stopPropagation();ctxShow(i,el)});
   let lp=null,sx=0,sy=0;const lpClear=()=>{clearTimeout(lp);lp=null}; // long-press (iOS doesn't send contextmenu)
-  el.addEventListener('touchstart',e=>{const t=e.touches[0];sx=t.clientX;sy=t.clientY;lpClear();lp=setTimeout(()=>{lp=null;if(navigator.vibrate)navigator.vibrate(15);ctxShow(i,el)},500)},{passive:true});
+  el.addEventListener('touchstart',e=>{const t=e.touches[0];sx=t.clientX;sy=t.clientY;lpClear();el._lp=0;lp=setTimeout(()=>{lp=null;el._lp=1;if(navigator.vibrate)navigator.vibrate(15);ctxShow(i,el)},500)},{passive:true});
   el.addEventListener('touchmove',e=>{const t=e.touches[0];if(Math.hypot(t.clientX-sx,t.clientY-sy)>8)lpClear()},{passive:true});
   ['touchend','touchcancel'].forEach(ev=>el.addEventListener(ev,lpClear));
   const m=new maplibregl.Marker({element:el,draggable:true,clickTolerance:6}).setLngLat([p[1],p[0]]).addTo(map);
   m.on('dragstart',pushHist);
   m.on('dragend',()=>{const l=m.getLngLat();S.wps[i]=[l.lat,l.lng];rerouteAround(i)});
+  if(i===0){let dragged=false; // tapping the start dot (not dragging it, not a long-press) offers to end the route there
+   m.on('dragstart',()=>{dragged=true});m.on('dragend',()=>setTimeout(()=>{dragged=false},200));
+   el.addEventListener('click',e=>{if(el._lp){el._lp=0;return}if(dragged||S.ob||S.wps.length<2||atStart())return;e.stopPropagation();endShow(el)})}
   wpMk.push(m);
  });
 }
@@ -852,14 +899,14 @@ function mapThumb(it){
  });
 }
 const IC_DL='<svg viewBox="0 0 24 24"><path d="M12 4v10M8 10l4 4 4-4M5 19h14"/></svg>';
-const IC_TAG='<svg viewBox="0 0 24 24"><path d="M20.6 13.4l-7.2 7.2a2 2 0 01-2.8 0L2 12V2h10l8.6 8.6a2 2 0 010 2.8z"/><path d="M7 7h.01"/></svg>';
+const IC_EDIT='<svg viewBox="0 0 24 24"><path d="M4 20h4L19.2 8.8a2.8 2.8 0 00-4-4L4 16z"/><path d="M13.5 6.5l4 4"/></svg>';
 function card(it){
  const d=document.createElement('div');d.className='gc'+(it.cur?' cur':'');d.tabIndex=0;d.setAttribute('role','button');d.setAttribute('aria-label','Load '+it.name);
  d.innerHTML=`<div class="th">${thumb(it.pts)}<div class="ac2"></div></div><div class="nm"></div>`;
  d.querySelector('.nm').textContent=it.name;d.title=fdu(it.dist)+(it.up!=null?' · '+it.up+' m':'');
  const th=d.querySelector('.th');th.dataset.k=tkey(it);const tc=TC.get(th.dataset.k);if(tc)paintTh(th,tc);else if(document.body.classList.contains('menu'))mapThumb(it);
  const ac=d.querySelector('.ac2');
- [['Download',IC_DL,it.dl],['Tags',IC_TAG,it.tag],['Delete',TRASH,it.del]].forEach(([t,ic,f])=>{if(!f)return;const b=document.createElement('button');b.type='button';b.innerHTML=ic;b.title=t;b.setAttribute('aria-label',t+' '+it.name);b.onclick=e=>{e.stopPropagation();f()};ac.appendChild(b)});
+ [['Download',IC_DL,it.dl],['Edit',IC_EDIT,it.edit],['Delete',TRASH,it.del]].forEach(([t,ic,f])=>{if(!f)return;const b=document.createElement('button');b.type='button';b.innerHTML=ic;b.title=t;b.setAttribute('aria-label',t+' '+it.name);b.onclick=e=>{e.stopPropagation();f()};ac.appendChild(b)});
  if(!ac.children.length)ac.remove();
  d.onclick=it.open;d.onkeydown=e=>{if(e.key==='Enter'&&e.target===d)it.open()};
  return d;
@@ -871,17 +918,23 @@ function row(it){ // list view: name (+ tags) and distance, no map thumbnail
  const tg=it.r&&it.r.tags&&it.r.tags.length?it.r.tags.join(' · '):'',g=d.querySelector('.rg');if(tg)g.textContent=tg;else g.remove();
  d.querySelector('.rd').textContent=it.dist!=null?fdu(it.dist):'';d.title=(it.dist!=null?fdu(it.dist):'')+(it.up!=null?' · '+it.up+' m':'');
  const ac=d.querySelector('.ra');
- [['Download',IC_DL,it.dl],['Tags',IC_TAG,it.tag],['Delete',TRASH,it.del]].forEach(([t,ic,f])=>{if(!f)return;const b=document.createElement('button');b.type='button';b.innerHTML=ic;b.title=t;b.setAttribute('aria-label',t+' '+it.name);b.onclick=e=>{e.stopPropagation();f()};ac.appendChild(b)});
+ [['Download',IC_DL,it.dl],['Edit',IC_EDIT,it.edit],['Delete',TRASH,it.del]].forEach(([t,ic,f])=>{if(!f)return;const b=document.createElement('button');b.type='button';b.innerHTML=ic;b.title=t;b.setAttribute('aria-label',t+' '+it.name);b.onclick=e=>{e.stopPropagation();f()};ac.appendChild(b)});
  if(!ac.children.length)ac.remove();
  d.onclick=it.open;d.onkeydown=e=>{if(e.key==='Enter'&&e.target===d)it.open()};
  return d;
 }
 const routePts=r=>{let p=r.segs.flat();if(r.ob&&p.length>1)p=p.concat(p.slice(0,-1).reverse());return p};
 const nat=(a,b)=>a.name.localeCompare(b.name,undefined,{numeric:true,sensitivity:'base'});
-function drawFilter(T){ // tag chips above the saved routes: All + one per tag in use
- const box=$('tgFil');box.textContent='';if(!T.size)return;
+function freshPane(){ // a big drop in content height can leave parts of the panel blank in some browsers: go to the top and force a full repaint
+ const pg=$('pgS');pg.scrollTop=0;pg.style.display='none';void pg.offsetHeight;pg.style.display='';pg.scrollTop=0;chkScroll()}
+let TG=new Map();
+function drawFilter(T){ // Tags button next to Grid/List; its panel holds All + one chip per tag in use
+ TG=T;const box=$('tgFil'),btn=$('tgBtn'),has=T.size>0,act=S.tagF&&T.get(S.tagF);box.textContent='';
+ btn.hidden=!has;$('tgPane').hidden=!has||!S.tgOpen;btn.setAttribute('aria-expanded',String(has&&S.tgOpen));
+ $('tgBtnTx').textContent=act?'Tags · '+act.label:'Tags';btn.classList.toggle('on',!!act);
+ if(!has)return;
  const add=(label,key,n)=>{const b=document.createElement('button');b.type='button';b.className='chip f';b.textContent=n!=null?label+' ('+n+')':label;
-  b.setAttribute('aria-pressed',String(S.tagF===key));b.onclick=()=>{S.tagF=S.tagF===key?null:key;list()};box.appendChild(b)};
+  b.setAttribute('aria-pressed',String(S.tagF===key));b.onclick=()=>{S.tagF=S.tagF===key?null:key;list();freshPane()};box.appendChild(b)};
  add('All',null);
  [...T.entries()].sort((x,y)=>x[1].label.localeCompare(y[1].label,undefined,{numeric:true,sensitivity:'base'})).forEach(([k,e])=>add(e.label,k,e.n));
 }
@@ -889,7 +942,7 @@ function list(){
  const a=store(),G={mine:[],race:[],major:[]};
  const items=a.map(r=>({r,name:r.name||'Untitled route',key:'u'+r.id+':'+Math.round(r.dist||0)+':'+r.w.length,dist:r.dist,up:r.up,pts:r.segs.flat(),cur:S.id===r.id,open:()=>{load(r);mobileClose()},
   dl:()=>saveGpx(r.name,routePts(r).map(p=>trkpt(p,null))),
-  tag:()=>quickTag(r.id),
+  edit:()=>quickEdit(r.id),
   del:()=>{if(!put(store().filter(x=>x.id!==r.id)))return;if(S.id===r.id)S.id=null;list();toast('Saved route removed.')}})); // leaves the route on the map
  const T=new Map();a.forEach(r=>(r.tags||[]).forEach(t=>{const k=tagKey(t),e=T.get(k);e?e.n++:T.set(k,{label:t,n:1})}));
  if(S.tagF&&!T.has(S.tagF))S.tagF=null;
@@ -908,14 +961,17 @@ function list(){
  const cnt=a.length+LIB.length;$('savedHd').textContent='Saved Routes'+(cnt?' ('+cnt+')':'');
  updateSaveBtn();
 }
-/* tags on a saved route, edited from its card or row without loading it */
+/* quick edit of a saved route (name, race flag, tags) from its card or row, without loading it */
 const TD={id:null,tags:[]};
-function quickTag(id){const r=store().find(x=>x.id===id);if(!r)return;TD.id=id;TD.tags=(r.tags||[]).slice();
- $('tgTitle').textContent='Tags for '+(r.name||'Untitled route');$('tgIn2').value='';$('tgDlg').classList.add('open');tdEd.draw();setTimeout(()=>$('tgIn2').focus(),0)}
-function closeTags(ok){tdEd.commit();$('tgDlg').classList.remove('open');if(!ok)return;
+function quickEdit(id){const r=store().find(x=>x.id===id);if(!r)return;TD.id=id;TD.tags=(r.tags||[]).slice();
+ $('edName').value=r.name||'';setSw('edRace',r.tag==='race');$('tgIn2').value='';$('tgDlg').classList.add('open');tdEd.draw();setTimeout(()=>{$('edName').focus();$('edName').select()},0)}
+function closeEdit(ok){tdEd.commit();$('tgDlg').classList.remove('open');if(!ok)return;
  const a=store(),i=a.findIndex(x=>x.id===TD.id);if(i<0)return;
- a[i]={...a[i],tags:TD.tags.slice()};
- if(put(a)){if(S.id===TD.id){setTags(TD.tags)}list()}}
+ const name=$('edName').value.trim(),race=$('edRace').checked;
+ a[i]={...a[i],name,tag:race?'race':'',tags:TD.tags.slice()};
+ if(!put(a))return;
+ if(S.id===TD.id){$('title').value=name;S.race=race;setSw('tRace',race);setTags(TD.tags)} // keep the open route's form in step
+ list()}
 function setView(v,quiet){S.view=v==='list'?'list':'grid';try{localStorage.setItem('sview',S.view)}catch(e){}
  document.body.classList.toggle('lv',S.view==='list');document.querySelectorAll('#vSeg button').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.v===S.view)));if(!quiet)list()}
 /* GPX files in ./saved: major-*.gpx = World majors, race-*.gpx = Race routes, regular-*.gpx = My routes */
@@ -1006,7 +1062,7 @@ function setManual(v,quiet){
  if(!quiet)toast(v?'Manual on: straight lines between points.':'Snapping new points to roads and trails.');
  updateSaveBtn();
 }
-function setSw(id,v){$(id).setAttribute('aria-checked',v)}
+function setSw(id,v){const e=$(id);e.setAttribute('aria-checked',v);if(e.type==='checkbox')e.checked=!!v}
 
 /* ---------- wiring ---------- */
 $('bUndo').onclick=undo;$('bClear').onclick=clearAll;$('bRev').onclick=reverse;
@@ -1019,7 +1075,7 @@ const MOBILE=matchMedia('(max-width:760px)');
 const CLOSE_MENU_ON_STYLE=true; // set false to keep the menu open after picking a map style on phones
 function mobileClose(){if(MOBILE.matches)closeMenu()} // on phones the menu covers the map, so close it once something loads
 $('bMenu').onclick=()=>{const o=!document.body.classList.contains('menu');if(o)document.body.classList.remove('sv');document.body.classList.toggle('menu',o);$('bMenu').classList.toggle('on',o);if(o){genThumbs();list()}chkScroll()};
-document.querySelectorAll('.xc').forEach(b=>b.onclick=closeMenu);
+document.querySelectorAll('.xc,.cx').forEach(b=>b.onclick=closeMenu);
 $('mapbox').addEventListener('transitionend',e=>{if(e.target.id==='mapbox')map.resize()});
 Object.keys(POIS).forEach(id=>$(id).onclick=()=>setPoi(POIS[id],!S.poi[POIS[id]]));
 function chkScroll(){const pg=$(document.body.classList.contains('sv')?'pgS':'pgM'),hd=pg.querySelector('.hd');
@@ -1032,7 +1088,7 @@ $('dBigU').onclick=()=>setUnit(S.unit==='km'?'mi':'km');
  $('card').addEventListener('touchstart',e=>{sx=e.touches[0].clientX;sy=e.touches[0].clientY},{passive:true});
  $('card').addEventListener('touchend',e=>{const t=e.changedTouches[0],dx=t.clientX-sx,dy=t.clientY-sy;if(MOBILE.matches&&dx<-70&&Math.abs(dy)<40)closeMenu()},{passive:true})}
 $('bSaved').onclick=()=>{document.body.classList.add('sv');loadLib();chkScroll()};$('bBack').onclick=()=>{document.body.classList.remove('sv');chkScroll()};
-$('tRace').onclick=()=>{S.race=!S.race;setSw('tRace',S.race);updateSaveBtn()};
+$('tRace').onchange=()=>{S.race=$('tRace').checked;updateSaveBtn()};
 $('bBak').onclick=()=>{const a=store();if(!a.length){toast('No saved routes to back up yet.');return}
  const x=document.createElement('a');x.href=URL.createObjectURL(new Blob([JSON.stringify(a.map(pack))],{type:'application/json'}));x.download='route-planner-backup-'+new Date().toISOString().slice(0,10)+'.json';
  document.body.appendChild(x);x.click();x.remove();setTimeout(()=>URL.revokeObjectURL(x.href),1000)};
@@ -1081,10 +1137,12 @@ setUnit(LS('unit')==='mi'?'mi':'km',true);
 const tgEd=tagEditor($('tgChips'),$('tgIn'),()=>S.tags,v=>{S.tags=v;updateSaveBtn()});
 const tdEd=tagEditor($('tgChips2'),$('tgIn2'),()=>TD.tags,v=>{TD.tags=v});
 function setTags(v){S.tags=v.slice();$('tgIn').value='';tgEd.draw();updateSaveBtn()}
-$('tgDone').onclick=()=>closeTags(true);$('tgCancel').onclick=()=>closeTags(false);
-$('tgDlg').addEventListener('keydown',e=>{if(e.key==='Escape'){e.stopPropagation();closeTags(false)}});
-$('tgDlg').addEventListener('mousedown',e=>{if(e.target===$('tgDlg'))closeTags(false)});
-document.querySelectorAll('#vSeg button').forEach(b=>b.onclick=()=>setView(b.dataset.v));
+$('tgDone').onclick=()=>closeEdit(true);$('tgCancel').onclick=()=>closeEdit(false);
+$('edName').addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();closeEdit(true)}});
+$('tgDlg').addEventListener('keydown',e=>{if(e.key==='Escape'){e.stopPropagation();closeEdit(false)}});
+$('tgDlg').addEventListener('mousedown',e=>{if(e.target===$('tgDlg'))closeEdit(false)});
+document.querySelectorAll('#vSeg button').forEach(b=>b.onclick=()=>{setView(b.dataset.v);freshPane()});
+$('tgBtn').onclick=()=>{S.tgOpen=!S.tgOpen;drawFilter(TG)};
 setView(S.view,true);migrate();list();refresh();loadLib();
 if(!S.home&&navigator.geolocation)navigator.geolocation.getCurrentPosition(p=>map.jumpTo({center:[p.coords.longitude,p.coords.latitude],zoom:14}),()=>{});
 </script>
