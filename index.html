@@ -888,37 +888,44 @@ const TC=new Map(),TP=new Set();
 const tkey=it=>S.style+'|'+it.key;
 function paintTh(el,c){if(c.img)el.style.backgroundImage=`url(${c.img})`;if(c.d)el.querySelector('path').setAttribute('d',c.d)}
 /* ONE shared off-screen map renders every thumbnail (map styles and route cards). Browsers cap live WebGL contexts and evict the oldest, which is the main map, so the page must never create a new map per thumbnail. */
-let TM=null,tmQ=Promise.resolve();
-const tmJob=fn=>{const p=tmQ.then(fn);tmQ=p.catch(()=>{});return p};
+let TM=null;
+/* one job at a time, in two lanes: the map-style tiles (hi) always run before route-card snapshots (lo) */
+const tmHi=[],tmLo=[];let tmRun=false;
+async function tmPump(){if(tmRun)return;tmRun=true;
+ while(tmHi.length||tmLo.length){const j=tmHi.length?tmHi.shift():tmLo.shift();try{j.res(await j.fn())}catch(e){j.rej(e)}}
+ tmRun=false}
+const tmJob=(fn,hi)=>new Promise((res,rej)=>{(hi?tmHi:tmLo).push({fn,res,rej});tmPump()});
 async function tmRender(style,view,w,h){
  if(!TM){const el=document.createElement('div');el.style.cssText='position:fixed;left:-9999px;top:0;pointer-events:none;width:'+w+'px;height:'+h+'px';document.body.appendChild(el);
   TM={el,style:null,m:new maplibregl.Map({container:el,style:{version:8,sources:{},layers:[]},interactive:false,attributionControl:false,preserveDrawingBuffer:true,fadeDuration:0,pixelRatio:2})}}
  const m=TM.m;TM.el.style.width=w+'px';TM.el.style.height=h+'px';m.resize();
  if(TM.style!==style){TM.style=style;m.setStyle(styleUrl(style),{diff:false})}
  if(view.bounds)m.fitBounds(view.bounds,{padding:view.pad,maxZoom:16,animate:false});else m.jumpTo({center:view.center,zoom:view.zoom});
- await new Promise(res=>{m.once('idle',()=>res());setTimeout(res,9000);m.triggerRepaint()});
+ await new Promise(res=>{m.once('idle',()=>res());setTimeout(res,6000);m.triggerRepaint()});
  return m;
 }
 map.on('webglcontextlost',()=>console.warn('Main map lost its WebGL context.'));
 function mapThumb(it){
  const k=tkey(it);if(TC.has(k)||TP.has(k))return;TP.add(k);const st=S.style;
  tmJob(async()=>{
-  if(st!==S.style){TP.delete(k);return}
+  if(st!==S.style||!document.body.classList.contains('menu')){TP.delete(k);return}
   let s=90,n=-90,w=180,e=-180;it.pts.forEach(p=>{s=Math.min(s,p[0]);n=Math.max(n,p[0]);w=Math.min(w,p[1]);e=Math.max(e,p[1])});
   let c={};
   try{const m=await tmRender(st,{bounds:[[w,s],[e,n]],pad:16},183,116),step=Math.max(1,Math.floor(it.pts.length/150));
    c={img:m.getCanvas().toDataURL('image/jpeg',.82),d:pathD(it.pts.filter((_,i)=>i%step===0||i===it.pts.length-1).map(p=>{const q=m.project([p[1],p[0]]);return[q.x,q.y]}))}}catch(x){}
   TP.delete(k);TC.set(k,c);
   document.querySelectorAll('.th[data-k]').forEach(t=>{if(t.dataset.k===k)paintTh(t,c)});
- });
+ }).catch(()=>{TP.delete(k)});
 }
+/* route-card snapshots are made when a card scrolls into view, not for every saved route at once */
+const thIO=new IntersectionObserver(es=>es.forEach(e=>{if(!e.isIntersecting)return;thIO.unobserve(e.target);const f=e.target._mt;e.target._mt=null;if(f)f()}),{rootMargin:'160px'});
 const IC_DL='<svg viewBox="0 0 24 24"><path d="M12 4v10M8 10l4 4 4-4M5 19h14"/></svg>';
 const IC_EDIT='<svg viewBox="0 0 24 24"><path d="M4 20h4L19.2 8.8a2.8 2.8 0 00-4-4L4 16z"/><path d="M13.5 6.5l4 4"/></svg>';
-function card(it){
+function card(it,eager){ // eager: snapshot straight away (the two latest routes); otherwise when scrolled into view
  const d=document.createElement('div');d.className='gc'+(it.cur?' cur':'');d.tabIndex=0;d.setAttribute('role','button');d.setAttribute('aria-label','Load '+it.name);
  d.innerHTML=`<div class="th">${thumb(it.pts)}<div class="ac2"></div></div><div class="nm"></div>`;
  d.querySelector('.nm').textContent=it.name;d.title=fdu(it.dist)+(it.up!=null?' · '+it.up+' m':'');
- const th=d.querySelector('.th');th.dataset.k=tkey(it);const tc=TC.get(th.dataset.k);if(tc)paintTh(th,tc);else if(document.body.classList.contains('menu'))mapThumb(it);
+ const th=d.querySelector('.th');th.dataset.k=tkey(it);const tc=TC.get(th.dataset.k);if(tc)paintTh(th,tc);else if(eager){if(document.body.classList.contains('menu'))mapThumb(it)}else{th._mt=()=>mapThumb(it);thIO.observe(th)}
  const ac=d.querySelector('.ac2');
  [['Download',IC_DL,it.dl],['Edit',IC_EDIT,it.edit],['Delete',TRASH,it.del]].forEach(([t,ic,f])=>{if(!f)return;const b=document.createElement('button');b.type='button';b.innerHTML=ic;b.title=t;b.setAttribute('aria-label',t+' '+it.name);b.onclick=e=>{e.stopPropagation();f()};ac.appendChild(b)});
  if(!ac.children.length)ac.remove();
@@ -953,6 +960,7 @@ function drawFilter(T){ // Tags button next to Grid/List; its panel holds All + 
  [...T.entries()].sort((x,y)=>x[1].label.localeCompare(y[1].label,undefined,{numeric:true,sensitivity:'base'})).forEach(([k,e])=>add(e.label,k,e.n));
 }
 function list(){
+ thIO.disconnect(); // the cards below are rebuilt, so observe the new ones
  const a=store(),G={mine:[],race:[],major:[]};
  const items=a.map(r=>({r,name:r.name||'Untitled route',key:'u'+r.id+':'+Math.round(r.dist||0)+':'+r.w.length,dist:r.dist,up:r.up,pts:r.segs.flat(),cur:S.id===r.id,open:()=>{load(r);mobileClose()},
   dl:()=>saveGpx(r.name,routePts(r).map(p=>trkpt(p,null))),
@@ -971,7 +979,7 @@ function list(){
   if(!arr.length){const d=document.createElement('div');d.className='mute';d.style.gridColumn='1/-1';d.textContent=f?'No routes with this tag.':em;box.appendChild(d)}
   arr.forEach(it=>box.appendChild((fn||mk)(it)))};
  Object.values(G).forEach(g=>g.sort(nat));
- fill('gRecent',items.slice().reverse().slice(0,2),'Nothing saved yet',card);fill('gMine',G.mine,'Nothing saved yet');fill('gRace',G.race,'No race routes yet. Turn on “Race route” when saving.');fill('gMaj',G.major,'Add major-*.gpx files to the saved folder.');
+ fill('gRecent',items.slice().reverse().slice(0,2),'Nothing saved yet',it=>card(it,true));fill('gMine',G.mine,'Nothing saved yet');fill('gRace',G.race,'No race routes yet. Turn on “Race route” when saving.');fill('gMaj',G.major,'Add major-*.gpx files to the saved folder.');
  const cnt=a.length+LIB.length;$('savedHd').textContent='Saved Routes'+(cnt?' ('+cnt+')':'');
  updateSaveBtn();
 }
@@ -1045,9 +1053,9 @@ function renderStyles(){
 function sizeTiles(){const g=$('styleGrid'),w=(g.clientWidth-24)/4;if(w>10)g.style.setProperty('--tw',w+'px')} // 4 columns, 8px gaps: tile height = tile width
 async function genThumbs(){
  if(thumbBusy)return;thumbBusy=true;tFail.clear();renderStyles();
- for(const id of S.styles.slice()){if(thumbs[id])continue;
-  try{await tmJob(async()=>{const m=await tmRender(id,{center:map.getCenter().toArray(),zoom:Math.min(15,Math.max(12,map.getZoom()))},174,174);thumbs[id]=m.getCanvas().toDataURL('image/jpeg',.8)})}catch(e){}
-  if(!thumbs[id])tFail.add(id);renderStyles()}
+ const ids=S.styles.filter(id=>!thumbs[id]).sort((a,b)=>(b===S.style)-(a===S.style)); // the style on the map first
+ await Promise.all(ids.map(id=>tmJob(async()=>{const m=await tmRender(id,{center:map.getCenter().toArray(),zoom:Math.min(15,Math.max(12,map.getZoom()))},174,174);thumbs[id]=m.getCanvas().toDataURL('image/jpeg',.8)},true)
+  .catch(()=>{}).then(()=>{if(!thumbs[id])tFail.add(id);renderStyles()})));
  thumbBusy=false;
 }
 function setStyle(id){
