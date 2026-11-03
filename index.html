@@ -258,14 +258,15 @@ body.lv #pgS .gr{display:flex;flex-direction:column;gap:0}
 #tgDlg.open{display:flex}
 #tgBox{width:100%;max-width:360px;box-sizing:border-box;background:var(--bg);border:1px solid var(--line);border-radius:12px;padding:20px;display:flex;flex-direction:column;gap:12px;box-shadow:0 6px 24px rgba(0,0,0,.18)}
 
+/* each sliding page is a stable layer of its own, so its content shrinking never repaints the whole panel */
+.pg{transform:translateZ(0)}
 /* accordions, tags button + panel, checkbox, header close button, end-at-start popup */
 [hidden]{display:none!important}
-.acc>summary{list-style:none;display:flex;align-items:center;justify-content:space-between;gap:8px;cursor:pointer;min-height:32px;border-radius:8px}
-.acc>summary::-webkit-details-marker{display:none}
-.acc>summary:focus-visible{outline:2px solid var(--acc);outline-offset:2px}
+.acc-h{margin:0;font:inherit}
+.acc-b{display:flex;align-items:center;justify-content:space-between;gap:8px;width:100%;min-height:32px;padding:0;border:0;border-radius:8px;background:none;color:inherit;font:inherit;text-align:left;cursor:pointer;-webkit-tap-highlight-color:transparent}
+.acc-b:focus-visible{outline:2px solid var(--acc);outline-offset:2px}
 .acc .chev{flex:none;width:12px;height:8px;fill:none;stroke:var(--mute);stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;transition:transform .15s}
-.acc[open] .chev{transform:rotate(180deg)} /* down when collapsed, up when open */
-.acc[open]>summary{margin-bottom:8px}
+.acc.open .chev{transform:rotate(180deg)} /* down when collapsed, up when open */
 #vTop{display:flex;align-items:center;justify-content:space-between;gap:8px}
 .tbtn{display:inline-flex;align-items:center;gap:6px;height:28px;max-width:60%;padding:0 12px;border:1px solid var(--line);border-radius:16px;background:none;color:var(--ink);font:400 12px/16px Inter,system-ui,sans-serif;cursor:pointer}
 .tbtn span{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
@@ -351,11 +352,11 @@ body.lv #pgS .gr{display:flex;flex-direction:column;gap:0}
    <div class="hd"><button class="lnk" id="bBack" type="button" style="font-size:14px;padding:0">‹ Back</button><button class="lnk xc" type="button" style="font-size:14px;padding:0">Close</button></div>
    <h1 style="padding:0 24px">Saved Routes</h1>
    <section class="sec" id="vBar"><div id="vTop"><div class="seg" id="vSeg" role="group" aria-label="Saved routes view"><button type="button" data-v="grid" aria-pressed="true">Grid</button><button type="button" data-v="list" aria-pressed="false">List</button></div><button class="tbtn" id="tgBtn" type="button" aria-expanded="false" aria-controls="tgPane" hidden><span id="tgBtnTx">Tags</span><svg viewBox="0 0 10 6"><path d="M1 1l4 4 4-4"/></svg></button></div><div id="tgPane" hidden><div class="tgs" id="tgFil" role="group" aria-label="Filter by tag"></div></div></section>
-   <section class="sec"><details class="acc" open><summary><h2>My Routes</h2><svg class="chev" viewBox="0 0 12 8"><path d="M1 1.5l5 5 5-5"/></svg></summary><div class="gr" id="gMine"></div></details></section>
+   <section class="sec acc open"><h2 class="acc-h"><button type="button" class="acc-b" aria-expanded="true" aria-controls="gMine"><span>My Routes</span><svg class="chev" viewBox="0 0 12 8"><path d="M1 1.5l5 5 5-5"/></svg></button></h2><div class="gr" id="gMine"></div></section>
    <hr class="dash mg">
-   <section class="sec"><details class="acc" open><summary><h2>Race Routes</h2><svg class="chev" viewBox="0 0 12 8"><path d="M1 1.5l5 5 5-5"/></svg></summary><div class="gr" id="gRace"></div></details></section>
+   <section class="sec acc open"><h2 class="acc-h"><button type="button" class="acc-b" aria-expanded="true" aria-controls="gRace"><span>Race Routes</span><svg class="chev" viewBox="0 0 12 8"><path d="M1 1.5l5 5 5-5"/></svg></button></h2><div class="gr" id="gRace"></div></section>
    <hr class="dash mg">
-   <section class="sec"><details class="acc" open><summary><h2>World Majors</h2><svg class="chev" viewBox="0 0 12 8"><path d="M1 1.5l5 5 5-5"/></svg></summary><div class="gr" id="gMaj"></div></details></section>
+   <section class="sec acc open"><h2 class="acc-h"><button type="button" class="acc-b" aria-expanded="true" aria-controls="gMaj"><span>World Majors</span><svg class="chev" viewBox="0 0 12 8"><path d="M1 1.5l5 5 5-5"/></svg></button></h2><div class="gr" id="gMaj"></div></section>
   </div>
   </div>
   <div id="tgDlg" role="dialog" aria-modal="true" aria-labelledby="tgTitle"><div id="tgBox"><h2 id="tgTitle" style="font-size:16px;line-height:20px">Edit route</h2><input class="fld" id="edName" placeholder="Route name" maxlength="80" aria-label="Route name" autocomplete="off"><div class="col" style="gap:8px"><label class="lb2" for="tgIn2">Tags</label><input class="fld" id="tgIn2" list="tgList" placeholder="Add a tag, press Enter" maxlength="40" autocomplete="off" enterkeyhint="done"><div class="tgs" id="tgChips2"></div></div><label class="ck"><input type="checkbox" id="edRace"><span>This route is a race</span></label><div class="cp" style="justify-content:flex-end;gap:16px"><button class="lnk" id="tgCancel" type="button" style="font-size:14px">Cancel</button><button class="btn pri" id="tgDone" type="button" style="width:auto;padding:0 24px;height:36px">Done</button></div></div></div>
@@ -1165,6 +1166,8 @@ $('tgDlg').addEventListener('keydown',e=>{if(e.key==='Escape'){e.stopPropagation
 $('tgDlg').addEventListener('mousedown',e=>{if(e.target===$('tgDlg'))closeEdit(false)});
 document.querySelectorAll('#vSeg button').forEach(b=>b.onclick=()=>{setView(b.dataset.v);freshPane()});
 $('tgBtn').onclick=()=>{S.tgOpen=!S.tgOpen;drawFilter(TG)};
+document.querySelectorAll('#pgS .acc-b').forEach(b=>b.onclick=()=>{ // collapse / expand a section; all start open
+ const open=b.getAttribute('aria-expanded')!=='true';b.setAttribute('aria-expanded',String(open));$(b.getAttribute('aria-controls')).hidden=!open;b.closest('.acc').classList.toggle('open',open)});
 setView(S.view,true);migrate();list();refresh();loadLib();
 if(!S.home&&navigator.geolocation)navigator.geolocation.getCurrentPosition(p=>map.jumpTo({center:[p.coords.longitude,p.coords.latitude],zoom:14}),()=>{});
 </script>
