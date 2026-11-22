@@ -537,10 +537,21 @@ function nearest(pt){ // closest point on the outbound route, in screen pixels
 function setHover(ll){const h=map.getSource('hover');if(h)h.setData({type:'FeatureCollection',features:ll?[{type:'Feature',properties:{},geometry:{type:'Point',coordinates:ll}}]:[]})}
 function liveUpdate(){S.pts=full();S.dist=total(S.pts);const r=map.getSource('route');if(r)r.setData(geo());showDist()}
 const onWp=e=>{const t=e.originalEvent&&e.originalEvent.target;return !!(t&&t.closest&&t.closest('.wp'))};
-let pend=null; // a press on the line: a plain click adds a point, a drag reshapes the route
+let pend=null,holdT=null; // a press on the line: a plain click adds a point, a drag reshapes the route
+/* Touch: the line only grabs after a short hold, so a normal pan or pinch near the line moves the map, not the route */
+function cancelPend(){clearTimeout(holdT);holdT=null;if(pend){pend=null;map.dragPan.enable()}}
+function abortDrag(){ // a second finger landed mid-reshape: treat it as a pinch, put the route back
+ if(!drag)return;drag=null;map.dragPan.enable();map.getCanvas().style.cursor='crosshair';undo();
+}
 function startDrag(e){
  if(S.wps.length<2||drag||pend||onWp(e))return;
- map.dragPan.disable();pend={x:e.point.x,y:e.point.y};
+ if(e.type==='touchstart'){
+  if(e.points&&e.points.length>1)return; // two fingers = pinch
+  pend={x:e.point.x,y:e.point.y,armed:false};
+  holdT=setTimeout(()=>{holdT=null;if(pend){pend.armed=true;map.dragPan.disable();if(navigator.vibrate)navigator.vibrate(10)}},250);
+  return;
+ }
+ map.dragPan.disable();pend={x:e.point.x,y:e.point.y,armed:true};
 }
 function beginDrag(pt){
  const n=nearest(pt),ll=map.unproject([n.x,n.y]),p=[ll.lat,ll.lng],i=n.i;
@@ -551,7 +562,11 @@ function beginDrag(pt){
  map.getCanvas().style.cursor='grabbing';
 }
 function moveDrag(e){
- if(pend&&!drag){if(Math.hypot(e.point.x-pend.x,e.point.y-pend.y)<4)return;const pt=pend;pend=null;beginDrag(pt)}
+ if(e.type==='touchmove'&&e.points&&e.points.length>1){cancelPend();abortDrag();return}
+ if(pend&&!drag){
+  const d=Math.hypot(e.point.x-pend.x,e.point.y-pend.y);
+  if(!pend.armed){if(d>8)cancelPend();return} // moved before the hold finished: let the map pan
+  if(d<4)return;const pt=pend;pend=null;beginDrag(pt)}
  if(!drag)return;
  const p=[e.lngLat.lat,e.lngLat.lng],k=drag.idx;
  S.wps[k]=p;S.segs[k-1]=[S.wps[k-1],p];S.segs[k]=[p,S.wps[k+1]];
@@ -568,6 +583,7 @@ map.on('mousemove',e=>{
 });
 map.on('touchmove',moveDrag);
 function endDrag(){
+ clearTimeout(holdT);holdT=null;
  if(pend){pend=null;map.dragPan.enable();return} // no movement: the map's click event adds a point here
  if(!drag)return;const k=drag.idx;drag=null;map.dragPan.enable();map.getCanvas().style.cursor='crosshair';
  S.skipClick=true;setTimeout(()=>S.skipClick=false,60);
